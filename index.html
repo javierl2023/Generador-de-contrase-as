@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="Esp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de contraseñas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de contraseñas</h1>
+        <p>Seleccione tamaño y escriba el nombre:</p>
+        <div class="input-group">
+            <label for="name">Nombre:</label>
+            <input type="text" id="name">
+        </div>
+        <div class="input-group">
+            <label for="length">Seleccione cantidad de caracteres (4-25):</label>
+            <input type="number" id="length" min="4" max="25" value="12">
+        </div>
+        <button id="generate" onclick="generatePassword()">Generar contraseña</button>
+        <h2>Contraseña generada</h2>
+        <table id="history">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tamaño</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Contraseña</th>
+                </tr>
+            </thead>
+            <tbody id="">
+                <!-- d history will be inserted here -->
+            </tbody>
+        </table>
+        <h2>Historial de contraseñas generadas</h2>
+        <table id="searchResults">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tamaño</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Contraseña</th>
+                </tr>
+            </thead>
+            <tbody id="searchResultsBody">
+                <!-- Search results will be inserted here -->
+            </tbody>
+            <div class="input-group">
+                <label for="search">Buscar contraseña por nombre:</label>
+                <input type="text" id="search">
+                <button id="searchButton" onclick="searchPassword()">Buscar</button>
+            </div>
+        </table>
+    </div>
+    
+    <script src="app.js"></script>
+    <script src="history.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const history = getHistory();
+            const historyTable = document.getElementById('historyBody');
+            history.forEach(entry => {
+                const row = historyTable.insertRow();
+                const nameCell = row.insertCell(0);
+                const lengthCell = row.insertCell(1);
+                const dateCell = row.insertCell(2);
+                const timeCell = row.insertCell(3);
+                const passwordCell = row.insertCell(4);
+                const [date, time] = entry.date.split(', ');
+                nameCell.textContent = entry.name;
+                lengthCell.textContent = entry.length;
+                dateCell.textContent = date;
+                timeCell.textContent = time;
+                passwordCell.textContent = entry.password;
+            });
+        });
+
+        function generatePassword() {
+            const nameInput = document.getElementById('name');
+            const name = nameInput.value;
+            const lengthInput = document.getElementById('length');
+            const length = lengthInput.value;
+            if (typeof name !== 'string' || !name.trim()) {
+                nameInput.focus();
+                return;
+            }
+
+            const history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
+            if (history.some(entry => entry.name === name)) {
+                nameInput.focus();
+                return;
+            }
+
+            // Generate password
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * charset.length);
+                password += charset[randomIndex];
+            }
+            const date = new Date().toLocaleString();
+
+            // Save to localStorage
+            history.push({ name, length, password, date });
+            localStorage.setItem('passwordHistory', JSON.stringify(history));
+
+            // Update history table
+            const historyTable = document.getElementById('history').getElementsByTagName('tbody')[0];
+            const row = historyTable.insertRow();
+            const nameCell = row.insertCell(0);
+            const lengthCell = row.insertCell(1);
+            const dateCell = row.insertCell(2);
+            const timeCell = row.insertCell(3);
+            const passwordCell = row.insertCell(4);
+            const [datePart, timePart] = date.split(', ');
+            nameCell.textContent = name;
+            lengthCell.textContent = length;
+            dateCell.textContent = datePart;
+            timeCell.textContent = timePart;
+            passwordCell.textContent = password;
+
+            // Remove display of generated password
+            // document.getElementById('password').textContent = password;
+        }
+
+        function searchPassword() {
+            const searchInput = document.getElementById('search').value.toLowerCase();
+            const searchResultsTable = document.getElementById('searchResultsBody');
+            searchResultsTable.innerHTML = ''; // Clear existing rows
+
+            const history = getHistory();
+            const filteredHistory = history.filter(entry => entry.name && entry.name.toLowerCase().includes(searchInput));
+
+            filteredHistory.forEach(entry => {
+                const row = searchResultsTable.insertRow();
+                const nameCell = row.insertCell(0);
+                const lengthCell = row.insertCell(1);
+                const dateCell = row.insertCell(2);
+                const timeCell = row.insertCell(3);
+                const passwordCell = row.insertCell(4);
+                const [date, time] = entry.date.split(', ');
+                nameCell.textContent = entry.name;
+                lengthCell.textContent = entry.length;
+                dateCell.textContent = date;
+                timeCell.textContent = time;
+                passwordCell.textContent = entry.password;
+            });
+        }
+
+        function getHistory() {
+            return JSON.parse(localStorage.getItem('passwordHistory')) || [];
+        }
+    </script>
+    
+</body>
+</html>
